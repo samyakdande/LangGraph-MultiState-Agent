@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LangGraph AI Agent</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
+            color: #00ff9f;
+        }
+
+        h1 {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(90deg, #00ff9f, #00c3ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        .chat-box {
+            background: #111;
+            padding: 20px;
+            border-radius: 10px;
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #00ff9f;
+        }
+
+        .message {
+            margin-bottom: 15px;
+        }
+
+        .user {
+            color: #00c3ff;
+        }
+
+        .bot {
+            color: #00ff9f;
+        }
+
+        .input-area {
+            display: flex;
+            margin-top: 15px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            background: #1e1e1e;
+            color: white;
+        }
+
+        button {
+            padding: 12px;
+            margin-left: 10px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(90deg, #00ff9f, #00c3ff);
+            cursor: pointer;
+        }
+
+        .workflow {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .node {
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid #00ff9f;
+            font-size: 12px;
+        }
+
+        .active {
+            background: #00ff9f;
+            color: black;
+        }
+
+        .sources {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #ccc;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>🤖 LangGraph AI Agent</h1>
+
+<div class="container">
+
+    <div class="chat-box" id="chat"></div>
+
+    <div class="input-area">
+        <input id="query" placeholder="Ask something..." />
+        <button onclick="ask()">Send</button>
+    </div>
+
+    <!-- Workflow Visualization -->
+    <div class="workflow">
+        <div class="node" id="input">Input</div>
+        <div class="node" id="router">Router</div>
+        <div class="node" id="wiki">Wiki</div>
+        <div class="node" id="vector">Vector</div>
+        <div class="node" id="tool">Tool</div>
+        <div class="node" id="combine">Combine</div>
+    </div>
+
+</div>
+
+<script>
+async function ask() {
+    const queryInput = document.getElementById("query");
+    const query = queryInput.value;
+
+    if (!query) return;
+
+    const chat = document.getElementById("chat");
+
+    // Add user message
+    chat.innerHTML += `<div class="message user">👤 ${query}</div>`;
+
+    queryInput.value = "";
+
+    // Reset workflow
+    document.querySelectorAll(".node").forEach(n => n.classList.remove("active"));
+
+    document.getElementById("input").classList.add("active");
+    document.getElementById("router").classList.add("active");
+
+    const res = await fetch("/ask", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({query})
+    });
+
+    const data = await res.json();
+
+    // Highlight correct node
+    if (data.route === "wikipedia") {
+        document.getElementById("wiki").classList.add("active");
+    } else if (data.route === "vector_db") {
+        document.getElementById("vector").classList.add("active");
+    } else {
+        document.getElementById("tool").classList.add("active");
+    }
+
+    document.getElementById("combine").classList.add("active");
+
+    // Add bot message
+    chat.innerHTML += `
+        <div class="message bot">
+            🤖 ${data.answer}
+            <div class="sources">
+                ${data.sources ? JSON.stringify(data.sources, null, 2) : ""}
+            </div>
+        </div>
+    `;
+
+    chat.scrollTop = chat.scrollHeight;
+}
+</script>
+
+</body>
+</html>
